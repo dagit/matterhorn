@@ -106,8 +106,9 @@ renderChannelList st = hLimit channelListWidth $ vBox
     channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
-                                                      (txt "#") <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect) <+>
-                                                      txt matchRemaining
+                                                      (txt "#") <+> txt preMatch
+                                                                <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect)
+                                                                <+> txt postMatch
                                        | st^.csMode == ChannelSelect &&
                                          (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
                                        | current   -> if st^.csMode == ChannelSelect
@@ -120,9 +121,10 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                                           withDefAttr unreadChannelAttr
                                        | otherwise -> id
                          matches = st^.csMode == ChannelSelect &&
-                                   (st^.csChannelSelect) `T.isPrefixOf` n &&
+                                   (st^.csChannelSelect) `T.isInfixOf` n &&
                                    (not $ T.null $ st^.csChannelSelect)
-                         matchRemaining = T.drop (T.length $ st^.csChannelSelect) n
+                         (preMatch,postMatch) = case T.breakOn (st^.csChannelSelect) n of
+                           (pre, post) -> (pre, T.drop (T.length $ st^.csChannelSelect) post)
                          current = n == currentChannelName
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
